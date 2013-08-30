@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -72,6 +73,16 @@ public class BuildZoneListener implements Listener{
 			}
 		}
 	}
+	
+    @EventHandler
+    public void onPlayerCommand(PlayerCommandPreprocessEvent event){
+		if(event.getPlayer().hasMetadata("inbmt")){
+			if(!event.getMessage().startsWith("/bmt")){
+				ChatUtil.send(event.getPlayer(), "Commands are disabled while in-game");
+				event.setCancelled(true);
+			}
+	    }
+    }
 	
 	@EventHandler
 	public void onPlayerBreakBlock(BlockBreakEvent event){
