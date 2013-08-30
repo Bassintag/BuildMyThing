@@ -232,6 +232,7 @@ public class BuildMyThing extends JavaPlugin{
 								player.sendMessage(ChatColor.GOLD + "/bmt ready " + ChatColor.GRAY + "Toggle if you are ready ore not");
 								player.sendMessage(ChatColor.GOLD + "/bmt invite " + ChatColor.GRAY + "Broadcast a message to invite other players to join you");
 								player.sendMessage(ChatColor.GOLD + "/bmt playwith [username] " + ChatColor.GRAY + "Play with another player");
+								player.sendMessage(ChatColor.GOLD + "/bmt list " + ChatColor.GRAY + "Display a list of all rooms");
 							}
 						}else {
 							ChatUtil.send(player, "Unknown sub-command");
