@@ -2,7 +2,7 @@ name: BuildMyThing
 main: bassintag.buildmything.common.BuildMyThing
 version: 1.2.1
 description: >
-             Test plugin atm.
+             Draw something in Minecraft.
 commands:
   bmt:
     description: The main command of Build My Thing
