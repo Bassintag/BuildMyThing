@@ -192,7 +192,7 @@ public class BuildMyThing extends JavaPlugin{
 							}
 						} else if(args[0].equals("invite") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
-								ChatUtil.broadcast(player.getName() + " wants to play Build My Thing, use \"" + ChatColor.YELLOW + "/bmt playwith " + player.getName() + ChatColor.RESET + "\" to play with him");
+								ChatUtil.broadcast(translator.get("invite").replace("$player", player.getName()));
 							} else {
 								ChatUtil.send(player, translator.get("player-not-ingame"));
 							}
@@ -244,7 +244,7 @@ public class BuildMyThing extends JavaPlugin{
 							ChatUtil.send(player, translator.get("wrong-command"));
 						}
 				} else {
-					ChatUtil.send(player, "No sub-command, use \"" + ChatColor.YELLOW + "/bmt help" + ChatColor.RESET + "\"to get a list of commands");
+					ChatUtil.send(player, translator.get("no-command"));
 				}
 			} else {
 				sender.sendMessage("Sorry this command can only be run by a player");

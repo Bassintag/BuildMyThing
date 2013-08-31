@@ -121,16 +121,14 @@ public class BuildZoneListener implements Listener{
 						ChatUtil.send(event.getPlayer(), instance.translator.get("no-chat-while-builder"));
 						event.setCancelled(true);
 					} else {
+						event.setCancelled(true);
 						String word = instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getWord();
 						if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).hasFound(event.getPlayer())){
 							ChatUtil.send(event.getPlayer(), instance.translator.get("word-already-found"));
-							event.setCancelled(true);
 						} else if(event.getMessage().toLowerCase().contains(word)){
 							instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).wordFoundBy(event.getPlayer());
-							event.setCancelled(true);
 						} else {
 							instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).sendMessage(ChatColor.BOLD + event.getPlayer().getName() + ": "+ ChatColor.RESET + event.getMessage().toLowerCase());
-							event.setCancelled(true);
 						}
 					}
 				}

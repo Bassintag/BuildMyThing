@@ -185,11 +185,11 @@ public class BuildZone implements Listener {
 	
 	public void startRound(){
 		if(this.word != null){
-			this.sendMessage(ChatColor.GREEN + "The word was: " + ChatColor.BOLD + word);
+			this.sendMessage(instance.translator.get("word-reveal").replace("$word", word));
 			
-			this.sendMessage(ChatColor.GREEN + "Score:");
+			this.sendMessage(instance.translator.get("score"));
 			for(Player p : score.keySet()){
-				this.sendMessage(ChatColor.GREEN + p.getName() + ChatColor.WHITE + " [" + score.get(p) + "]");
+				this.sendMessage(instance.translator.get("score-player").replace("$score", String.valueOf(score.get(p))).replace("$player", p.getName()));
 			}
 		}
 		
@@ -204,13 +204,13 @@ public class BuildZone implements Listener {
 		this.buildzone.clear();
 		this.getNextBuilder();
 		
-		TaskAlert alert1 = new TaskAlert("60 seconds left!", this.getPlayers());
-		TaskAlert alert2 = new TaskAlert("30 seconds left!", this.getPlayers());
-		TaskAlert alert3 = new TaskAlert("10 seconds left!", this.getPlayers());
+		TaskAlert alert1 = new TaskAlert(instance.translator.get("60sec"), this.getPlayers());
+		TaskAlert alert2 = new TaskAlert(instance.translator.get("30sec"), this.getPlayers());
+		TaskAlert alert3 = new TaskAlert(instance.translator.get("10sec"), this.getPlayers());
 		TaskNextRound endRound = new TaskNextRound(this);
 		endRound.runTaskLater(instance, 1900);
 		this.tasks.add(endRound);
-		TaskAlert endRoundMsg = new TaskAlert(ChatColor.RED + "Time out! Starting next round in 5sec!", this.getPlayers());
+		TaskAlert endRoundMsg = new TaskAlert(instance.translator.get("time-out"), this.getPlayers());
 		endRoundMsg.runTaskLater(instance, 1800);
 		alert1.runTaskLater(instance, 600);
 		alert2.runTaskLater(instance, 1200);
@@ -262,7 +262,7 @@ public class BuildZone implements Listener {
 				}
 			}
 		}
-		this.sendMessage(ChatColor.YELLOW + "" + ChatColor.BOLD + "GAME OVER");
+		this.sendMessage(instance.translator.get("game-over"));
 		Player winner = null;
 		for(Player p : this.score.keySet()){
 			if(winner != null){
@@ -276,7 +276,7 @@ public class BuildZone implements Listener {
 		
 		if(this.score.containsKey(winner)){
 			int i = score.get(winner);
-			this.sendMessage(ChatColor.GREEN + "WINNER: " + ChatColor.BOLD + winner.getName() + ChatColor.RESET + " [" + i + "]");
+			this.sendMessage(instance.translator.get("winner").replace("$score", String.valueOf(i)).replace("$player", winner.getName()));
 		}
 		this.stop();
 	}
@@ -293,9 +293,9 @@ public class BuildZone implements Listener {
 				p.getInventory().addItem(new ItemStack(Material.STAINED_CLAY, 2, i));
 			}
 		}
-		this.sendMessage(p.getName() + " is building this time!");
-		this.sendMessage("You have" + ChatColor.BOLD +  " 90sec" + ChatColor.RESET + " to guess the word!");
-		ChatUtil.send(p,ChatColor.RED + "The word to guess is: " + ChatColor.BOLD + this.word);
+		this.sendMessage(instance.translator.get("builder").replace("$player", p.getName()));
+		this.sendMessage(instance.translator.get("time"));
+		ChatUtil.send(p, instance.translator.get("word").replace("$word", word));
 	}
 	
 	public void sendMessage(String message){
@@ -347,14 +347,14 @@ public class BuildZone implements Listener {
 		if(!this.isStarted()){
 			if(this.ready.containsKey(player)){
 				if(this.ready.get(player) == true){
-					this.sendMessage(player.getName() + " is no longer ready");
+					this.sendMessage(instance.translator.get("not-ready").replace("$player", player.getName()));
 					this.ready.put(player, false);
 				} else {
 					this.ready.put(player, true);
-					this.sendMessage(player.getName() + " is ready");
+					this.sendMessage(instance.translator.get("ready").replace("$player", player.getName()));
 					if(this.players > 1){
 						if(this.isEveryoneReady()){
-							this.sendMessage("Everyone is ready, starting the game!");
+							this.sendMessage(instance.translator.get("everyone-ready"));
 							this.start();
 						}
 					}
@@ -388,7 +388,7 @@ public class BuildZone implements Listener {
 			this.hasFound.add(player);
 			if(!wordHasBeenFound){
 				this.sendMessage(instance.translator.get("player-find-word-3points").replace("$player", player.getName()));
-				this.sendMessage(instance.translator.get("language.builder-get-points"));
+				this.sendMessage(instance.translator.get("builder-get-points").replace("$player", builder.getName()));
 				this.increaseScore(player, 3);
 				this.increaseScore(builder, 2);
 				this.wordHasBeenFound = true;
@@ -402,8 +402,8 @@ public class BuildZone implements Listener {
 		}
 		
 		if(this.playerFound >= this.players - 1){
-			this.sendMessage("Everyone found the word, great!");
-			this.sendMessage("Next round starting in 5sec!");
+			this.sendMessage(instance.translator.get("everyone-found"));
+			this.sendMessage(instance.translator.get("next-round"));
 			this.cancelTasks();
 			TaskNextRound endRound = new TaskNextRound(this);
 			endRound.runTaskLater(instance, 100);
