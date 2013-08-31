@@ -71,6 +71,10 @@ public class BuildZoneListener implements Listener{
 					}
 				}
 			}
+		} else if(event.getPlayer().hasMetadata("inbmt")) {
+			if(event.getPlayer().getItemInHand().getTypeId() >= 256){
+				event.setCancelled(true);
+			}
 		}
 	}
 	
@@ -78,7 +82,7 @@ public class BuildZoneListener implements Listener{
     public void onPlayerCommand(PlayerCommandPreprocessEvent event){
 		if(event.getPlayer().hasMetadata("inbmt")){
 			if(!event.getMessage().startsWith("/bmt")){
-				ChatUtil.send(event.getPlayer(), "Commands are disabled while in-game");
+				ChatUtil.send(event.getPlayer(), instance.translator.get("no-command-while-ingame"));
 				event.setCancelled(true);
 			}
 	    }
@@ -114,11 +118,14 @@ public class BuildZoneListener implements Listener{
 			if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()) != null){
 				if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).isStarted()){
 					if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getBuilder().getName() == event.getPlayer().getName()){
-						ChatUtil.send(event.getPlayer(), "You can't chat while being the builder");
+						ChatUtil.send(event.getPlayer(), instance.translator.get("no-chat-while-builder"));
 						event.setCancelled(true);
 					} else {
 						String word = instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getWord();
-						if(event.getMessage().toLowerCase().contains(word)){
+						if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).hasFound(event.getPlayer())){
+							ChatUtil.send(event.getPlayer(), instance.translator.get("word-already-found"));
+							event.setCancelled(true);
+						} else if(event.getMessage().toLowerCase().contains(word)){
 							instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).wordFoundBy(event.getPlayer());
 							event.setCancelled(true);
 						} else {

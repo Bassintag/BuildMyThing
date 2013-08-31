@@ -83,7 +83,12 @@ public class BuildZone implements Listener {
 	
 	public void leave(Player player){
 		if(this.score.containsKey(player)){
-			this.started = false;
+			if(this.started = false){
+				if(this.players == this.MAXPLAYERS){
+					this.sendMessage("Someone left the game, game won't start until everyone is ready");
+					this.cancelTasks();
+				}
+			}
 			this.score.remove(player);
 			this.ready.remove(player);
 			this.hasBeenBuilder.remove(player);
@@ -141,6 +146,13 @@ public class BuildZone implements Listener {
 							ChatUtil.send(p, player.getName() + " join the game" + "   (" + this.players + "/" + this.MAXPLAYERS + " players)");
 						}
 					}
+					
+					if(this.players == this.MAXPLAYERS){
+						this.sendMessage("Room is full, starting game in 5sec");
+						TaskStart start = new TaskStart(this);
+						start.runTaskLater(instance, 100);
+						this.tasks.add(start);
+					}
 				} else {
 					ChatUtil.send(player, "Room full!");
 				}
@@ -156,17 +168,19 @@ public class BuildZone implements Listener {
 	}
 	
 	public void start(){
-		this.started = true;
-		this.sendMessage("Everyone is ready, starting the game!");
-		this.word = null;
-		if(this.players < 3){
-			this.buildPerPlayer = 3;
+		if(!started){
+			this.cancelTasks();
+			this.started = true;
+			this.word = null;
+			if(this.players < 3){
+				this.buildPerPlayer = 3;
+			}
+			this.hasBeenBuilder.clear();
+			for(Player p : this.score.keySet()){
+				this.hasBeenBuilder.put(p, 0);
+			}
+			this.startRound();
 		}
-		this.hasBeenBuilder.clear();
-		for(Player p : this.score.keySet()){
-			this.hasBeenBuilder.put(p, 0);
-		}
-		this.startRound();
 	}
 	
 	public void startRound(){
@@ -259,8 +273,11 @@ public class BuildZone implements Listener {
 				winner = p;
 			}
 		}
-		int i = score.get(winner);
-		this.sendMessage(ChatColor.GREEN + "WINNER: " + ChatColor.BOLD + winner.getName() + ChatColor.RESET + " [" + i + "]");
+		
+		if(this.score.containsKey(winner)){
+			int i = score.get(winner);
+			this.sendMessage(ChatColor.GREEN + "WINNER: " + ChatColor.BOLD + winner.getName() + ChatColor.RESET + " [" + i + "]");
+		}
 		this.stop();
 	}
 	
@@ -296,9 +313,9 @@ public class BuildZone implements Listener {
 	}
 	
 	public void save(FileConfiguration file){
-		file.set(this.getName() + ".pos1", LocationUtil.LocationToString(this.buildzone.getCorner1().getLocation()));
-		file.set(this.getName() + ".pos2", LocationUtil.LocationToString(this.buildzone.getCorner2().getLocation()));
-		file.set(this.getName() + ".spawn", LocationUtil.LocationToString(this.spectateTP));
+		file.set("rooms" + this.getName() + ".pos1", LocationUtil.LocationToString(this.buildzone.getCorner1().getLocation()));
+		file.set("rooms" + this.getName() + ".pos2", LocationUtil.LocationToString(this.buildzone.getCorner2().getLocation()));
+		file.set("rooms" + this.getName() + ".spawn", LocationUtil.LocationToString(this.spectateTP));
 	}
 	
 	public void remove(FileConfiguration file){
@@ -308,9 +325,9 @@ public class BuildZone implements Listener {
 	}
 	
 	public static BuildZone load(FileConfiguration file, String name, BuildMyThing instance){
-		Location corner1 = LocationUtil.StringToLoc(file.getString(name + ".pos1"));
-		Location corner2 = LocationUtil.StringToLoc(file.getString(name + ".pos2"));
-		Location spawn = LocationUtil.StringToLoc(file.getString(name + ".spawn"));
+		Location corner1 = LocationUtil.StringToLoc(file.getString("rooms" + name + ".pos1"));
+		Location corner2 = LocationUtil.StringToLoc(file.getString("rooms" + name + ".pos2"));
+		Location spawn = LocationUtil.StringToLoc(file.getString("rooms" + name + ".spawn"));
 		
 		return new BuildZone(new CuboidZone(corner1.getBlock(), corner2.getBlock()), spawn, name, instance);
 	}
@@ -337,6 +354,7 @@ public class BuildZone implements Listener {
 					this.sendMessage(player.getName() + " is ready");
 					if(this.players > 1){
 						if(this.isEveryoneReady()){
+							this.sendMessage("Everyone is ready, starting the game!");
 							this.start();
 						}
 					}
@@ -369,13 +387,13 @@ public class BuildZone implements Listener {
 		if(this.acceptWords && !this.hasFound.contains(player)){
 			this.hasFound.add(player);
 			if(!wordHasBeenFound){
-				this.sendMessage(ChatColor.BOLD + player.getName() + ChatColor.RESET + ChatColor.GREEN + " has found the word! " + ChatColor.RESET + "[+3]");
-				this.sendMessage(ChatColor.BOLD + builder.getName() + ChatColor.RESET + ChatColor.GREEN + " also earn 2 points!");
+				this.sendMessage(instance.translator.get("player-find-word-3points").replace("$player", player.getName()));
+				this.sendMessage(instance.translator.get("language.builder-get-points"));
 				this.increaseScore(player, 3);
 				this.increaseScore(builder, 2);
 				this.wordHasBeenFound = true;
 			} else {
-				this.sendMessage(ChatColor.BOLD + player.getName() + ChatColor.RESET + ChatColor.GREEN + " has found the word! " + ChatColor.RESET + "[+1]");
+				this.sendMessage(instance.translator.get("player-find-word-1point").replace("$player", player.getName()));
 				this.increaseScore(player, 1);
 			}
 			
@@ -400,5 +418,9 @@ public class BuildZone implements Listener {
 
 	public int getMaxPlayers() {
 		return this.MAXPLAYERS;
+	}
+
+	public boolean hasFound(Player player) {
+		return this.hasFound.contains(player);
 	}
 }

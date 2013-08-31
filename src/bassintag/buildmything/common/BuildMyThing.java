@@ -33,6 +33,7 @@ public class BuildMyThing extends JavaPlugin{
 	private List<BuildZone> rooms = new ArrayList<BuildZone>();
 	public Logger logger = Logger.getLogger("Minecraft");
 	public BuildMyThing plugin = this;
+	public LanguageUtil translator;
 	
 	private List<String> words = new ArrayList<String>();
 	
@@ -63,7 +64,13 @@ public class BuildMyThing extends JavaPlugin{
 		List<String> defaultWords = new ArrayList<String>(Arrays.asList(new String[] {"house", "creeper", "pickaxe", "boat", "dog", "apple", "bow", "bone", "minecart", "zombie", "pig", "chicken", "skeleton", "tree", "cloud", "sun", "moon", "cave", "slime", "flower", "mountain", "volcano", "potato", "mushroom", "sword", "armor", "diamond", "cat", "book", "sheep", "squid", "enderman", "snowman", "bread", "wheat"}));
 	    this.getConfig().options().copyDefaults(true);
 	    this.getConfig().addDefault("words", defaultWords);
-	    this.getConfig().addDefault("allow-creative", true);
+	    this.getConfig().addDefault("allow-creative", false);
+	    this.getConfig().addDefault("start-when-full", true);
+	    this.getConfig().addDefault("language-current", "en");
+	    
+		translator = new LanguageUtil(this);
+		
+		translator.setLanguage(this.getConfig().getString("language-current"));
 		
 		BuildZoneListener bListener = new BuildZoneListener(this);
 		SignListener sListener = new SignListener(this);
@@ -112,15 +119,15 @@ public class BuildMyThing extends JavaPlugin{
 				Player player  = (Player) sender;
 				if(args.length > 0){
 						if(args[0].equals("p1") && player.hasPermission("bmt.admin")){
-							ChatUtil.send(player, "Point 1 set to your actual feet position");
+							ChatUtil.send(player, translator.get("p1-set"));
 							player.setMetadata("bmtp1", new FixedMetadataValue(this, LocationUtil.LocationToString(player.getLocation())));
 							return true;
 						} else if(args[0].equals("p2") && player.hasPermission("bmt.admin")){
-							ChatUtil.send(player, "Point 2 set to your actual feet position");
+							ChatUtil.send(player,  translator.get("p2-set"));
 							player.setMetadata("bmtp2", new FixedMetadataValue(this, LocationUtil.LocationToString(player.getLocation())));
 							return true;
 						} else if(args[0].equals("spawn") && player.hasPermission("bmt.admin")){
-							ChatUtil.send(player, "Room spawn location set to your actual feet position");
+							ChatUtil.send(player, translator.get("spawn-set"));
 							player.setMetadata("bmtspec", new FixedMetadataValue(this, LocationUtil.LocationToString(player.getLocation())));
 							return true;
 						} else if(args[0].equals("create") && player.hasPermission("bmt.admin")){
@@ -133,14 +140,13 @@ public class BuildMyThing extends JavaPlugin{
 										Location loc2 = LocationUtil.StringToLoc(player.getMetadata("bmtp2").get(0).asString());
 										Location spawn = LocationUtil.StringToLoc(player.getMetadata("bmtspec").get(0).asString());
 										this.rooms.add(new BuildZone(new CuboidZone(loc1.getBlock(), loc2.getBlock()), spawn, args[1], this));
-										ChatUtil.send(player, "Room created!");
+										ChatUtil.send(player, translator.get("room-created"));
 									}
 								} else {
-									ChatUtil.send(player, "Make sure you selected the 2 points of the build zone and the room spawn location");
-									ChatUtil.send(player, "Commands are: /bmt p1, /bmt p2, /bmt spawn");
+									ChatUtil.send(player, translator.get("room-precize"));
 								}
 							} else {
-								ChatUtil.send(player, "You must precize a room name");
+								ChatUtil.send(player, translator.get("room-precize"));
 							}
 						} else if(args[0].equals("remove") && player.hasPermission("bmt.admin")){
 							if(args.length > 1){
@@ -148,10 +154,10 @@ public class BuildMyThing extends JavaPlugin{
 									this.getRoomByName(args[1]).remove(getConfig());
 									this.rooms.remove(this.getRoomByName(args[1]));
 								} else {
-									ChatUtil.send(player, "This room doesn't exist!");
+									ChatUtil.send(player, translator.get("room-doesnt-exist"));
 								}
 							} else {
-								ChatUtil.send(player, "You must precize a room name");
+								ChatUtil.send(player, translator.get("room-precize"));
 							}
 						} else if(args[0].equals("join") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
@@ -161,38 +167,38 @@ public class BuildMyThing extends JavaPlugin{
 									if(this.getRoomByName(args[1]) != null){
 										this.getRoomByName(args[1]).join(player);
 									} else {
-										ChatUtil.send(player, "This room doesn't exist");
+										ChatUtil.send(player, translator.get("room-doesnt-exist"));
 									}
 								} else {
-									ChatUtil.send(player, "You must precize a room name");
+									ChatUtil.send(player, translator.get("room-precize"));
 								}
 							}
 						} else if(args[0].equals("leave") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
 								this.getRoomByName(player.getMetadata("inbmt").get(0).asString()).leave(player);
 							} else {
-								ChatUtil.send(player, "You aren't in a game room");
+								ChatUtil.send(player, translator.get("player-not-ingame"));
 							}
 						} else if(args[0].equals("ready") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
 								this.getRoomByName(player.getMetadata("inbmt").get(0).asString()).setReady(player);
 							} else {
-								ChatUtil.send(player, "You aren't in an game room");
+								ChatUtil.send(player, translator.get("player-not-ingame"));
 							}
 						} else if(args[0].equals("list") && player.hasPermission("bmt.default")){
-							ChatUtil.send(player, "Room list:");
+							ChatUtil.send(player, translator.get("room-list"));
 							for(BuildZone b : this.rooms){
-								player.sendMessage(ChatColor.YELLOW + "* " + ChatColor.AQUA + b.getName() + ChatColor.RESET +  " | " + b.getPlayers().size() + ChatColor.YELLOW + "/" + ChatColor.RESET + b.getMaxPlayers() + " players | (" + (b.isStarted() ? ChatColor.RED + "STARTED" : ChatColor.GREEN + "OPEN") + ChatColor.RESET + ")");
+								player.sendMessage(ChatColor.YELLOW + "* " + ChatColor.AQUA + b.getName() + ChatColor.RESET +  " | " + b.getPlayers().size() + ChatColor.YELLOW + "/" + ChatColor.RESET + b.getMaxPlayers() + " | (" + (b.isStarted() ? ChatColor.RED + "STARTED" : ChatColor.GREEN + "OPEN") + ChatColor.RESET + ")");
 							}
 						} else if(args[0].equals("invite") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
 								ChatUtil.broadcast(player.getName() + " wants to play Build My Thing, use \"" + ChatColor.YELLOW + "/bmt playwith " + player.getName() + ChatColor.RESET + "\" to play with him");
 							} else {
-								ChatUtil.send(player, "You aren't in an game room");
+								ChatUtil.send(player, translator.get("player-not-ingame"));
 							}
 						} else if(args[0].equals("playwith") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
-								ChatUtil.send(player, "You are in a game room");
+								ChatUtil.send(player, translator.get("player-already-ingame"));
 							} else {
 								if(args.length > 1){
 									if(Bukkit.getPlayer(args[1]) != null){
@@ -201,16 +207,16 @@ public class BuildMyThing extends JavaPlugin{
 											if(p.hasMetadata("inbmt")){
 												this.getRoomByName(p.getMetadata("inbmt").get(0).asString()).join(player);
 											} else {
-												ChatUtil.send(player, "This player isn't playing Build My Thing");
+												ChatUtil.send(player, translator.get("player-not-playing"));
 											}
 										} else {
-											ChatUtil.send(player, "This player isn't online");
+											ChatUtil.send(player, translator.get("player-not-online"));
 										}
 									} else {
-										ChatUtil.send(player, "This player isn't online");
+										ChatUtil.send(player, translator.get("player-not-online"));
 									}
 								} else {
-									ChatUtil.send(player, "You must precize a player name");
+									ChatUtil.send(player, translator.get("room-precize"));
 								}
 							}
 						} else if(args[0].equals("help")) {
@@ -235,7 +241,7 @@ public class BuildMyThing extends JavaPlugin{
 								player.sendMessage(ChatColor.GOLD + "/bmt list " + ChatColor.GRAY + "Display a list of all rooms");
 							}
 						}else {
-							ChatUtil.send(player, "Unknown sub-command");
+							ChatUtil.send(player, translator.get("wrong-command"));
 						}
 				} else {
 					ChatUtil.send(player, "No sub-command, use \"" + ChatColor.YELLOW + "/bmt help" + ChatColor.RESET + "\"to get a list of commands");
