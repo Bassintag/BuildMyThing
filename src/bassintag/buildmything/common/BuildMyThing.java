@@ -67,6 +67,7 @@ public class BuildMyThing extends JavaPlugin{
 	    this.getConfig().addDefault("allow-creative", false);
 	    this.getConfig().addDefault("start-when-full", true);
 	    this.getConfig().addDefault("language-current", "en");
+	    this.getConfig().addDefault("update-checker", true);
 	    
 		translator = new LanguageUtil(this);
 		

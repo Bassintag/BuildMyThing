@@ -13,11 +13,13 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import bassintag.buildmything.common.BuildMyThing;
 import bassintag.buildmything.common.ChatUtil;
+import bassintag.buildmything.common.update.UpdateChecker;
 
 public class BuildZoneListener implements Listener{
 	
@@ -113,10 +115,26 @@ public class BuildZoneListener implements Listener{
 	}
 	
 	@EventHandler
+	public void onPlayerJoin(PlayerJoinEvent event){
+		if(event.getPlayer().hasPermission("bmt.admin")){
+			if(UpdateChecker.isOutdated(instance)){
+				if(instance.getConfig().getBoolean("update-checker")){
+					String version = UpdateChecker.getLastVersion("http://dev.bukkit.org/bukkit-plugins/build-my-thing/files.rss");
+					ChatUtil.send(event.getPlayer(),ChatColor.RED +  "New version available: " + ChatColor.RESET + version + ChatColor.RED + "\n Get it here:");
+					event.getPlayer().sendMessage("  http://dev.bukkit.org/bukkit-plugins/build-my-thing/files");
+					event.getPlayer().sendMessage(ChatColor.GRAY + "Update checker can be disabled in the config.yml");
+				}
+			}
+		}
+	}
+	
+	@EventHandler
 	public void onPlayerChat(AsyncPlayerChatEvent event){
 		if(event.getPlayer().hasMetadata("inbmt")){
 			if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()) != null){
+				System.out.println("test1");
 				if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).isStarted()){
+					System.out.println("test2");
 					if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getBuilder().getName() == event.getPlayer().getName()){
 						ChatUtil.send(event.getPlayer(), instance.translator.get("no-chat-while-builder"));
 						event.setCancelled(true);
@@ -135,4 +153,6 @@ public class BuildZoneListener implements Listener{
 			}
 		}
 	}
+	
+
 }

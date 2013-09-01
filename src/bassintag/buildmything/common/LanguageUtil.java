@@ -24,7 +24,6 @@ public class LanguageUtil {
 	
 	public void setLanguage(String language){
 		FileConfiguration config = this.instance.getConfig();
-		System.out.println(language);
 		if(language.toLowerCase().startsWith("en")){
 			config.set("language.p1-set", "Point 1 set to your actual feet position");
 			config.set("language.p2-set", "Point 2 set to your actual feet position");
@@ -64,6 +63,12 @@ public class LanguageUtil {
 			config.set("language.score", ChatColor.GREEN + "Score:");
 			config.set("language.score-player", ChatColor.GREEN +"$player" + ChatColor.WHITE + " [$score]");
 			config.set("language.invite", "$player wants to play Build My Thing, use \"" + ChatColor.YELLOW + "/bmt playwith $player" + ChatColor.RESET + "\" to play with him");
+			config.set("language.join", "$player join the game ($currentplayers / $maxplayers)");
+			config.set("language.room-starting", "Room is full, starting game in 5sec");
+			config.set("language.room-started", "Room already started!");
+			config.set("language.room-full", "Room full!");
+			config.set("language.player-left", "You left the game");
+			config.set("language.room-player-left", "$player left the game");
 		} else if(language.toLowerCase().startsWith("fr")){
 			config.set("language.p1-set", "Le point 1 se trouve maintenant à votre position");
 			config.set("language.p1-set", "Le point 2 se trouve maintenant à votre position");
@@ -103,6 +108,12 @@ public class LanguageUtil {
 			config.set("language.score", ChatColor.GREEN + "Score:");
 			config.set("language.score-player", ChatColor.GREEN +"$player" + ChatColor.WHITE + " [$score]");
 			config.set("language.invite", "$player voudrait jouer à Build My Thing, tapez \"" + ChatColor.YELLOW + "/bmt playwith $player" + ChatColor.RESET + "\" pour participer!");
+			config.set("language.join", "$player a rejoint la partie ($currentplayers / $maxplayers)");
+			config.set("language.room-starting", "La salle est pleine, la partie va commencer dans 5sec");
+			config.set("language.room-started", "La partie a déjà commencée!");
+			config.set("language.room-full", "La salle est pleine!");
+			config.set("language.player-left", "Vous avez quitté la partie");
+			config.set("language.room-player-left", "$player a quitté la partie");
 		}
 	}
 

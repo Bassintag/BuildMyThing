@@ -10,6 +10,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -28,6 +29,7 @@ import bassintag.buildmything.common.LocationUtil;
 import bassintag.buildmything.common.cuboid.CuboidZone;
 import bassintag.buildmything.common.tasks.TaskAlert;
 import bassintag.buildmything.common.tasks.TaskNextRound;
+import bassintag.buildmything.common.tasks.TaskStart;
 
 public class BuildZone implements Listener {
 	
@@ -46,7 +48,7 @@ public class BuildZone implements Listener {
 	private Player builder;
 	
 	private int players;
-	private final int MAXPLAYERS = 4;
+	private final int MAXPLAYERS = 12;
 	private int buildPerPlayer = 2;
 	private String name;
 	
@@ -83,7 +85,7 @@ public class BuildZone implements Listener {
 	
 	public void leave(Player player){
 		if(this.score.containsKey(player)){
-			if(this.started = false){
+			if(this.started == false){
 				if(this.players == this.MAXPLAYERS){
 					this.sendMessage("Someone left the game, game won't start until everyone is ready");
 					this.cancelTasks();
@@ -102,14 +104,14 @@ public class BuildZone implements Listener {
 			this.gamemode.remove(player);
 			this.board.resetScores(player);
 			player.setScoreboard(manager.getMainScoreboard());
-			this.players -= 1;
+			this.players = this.players - 1;
 			player.teleport(LocationUtil.StringToLoc(player.getMetadata("oldLoc").get(0).asString()));
 			player.removeMetadata("oldLoc", instance);
 			player.removeMetadata("inbmt", instance);
-			ChatUtil.send(player, "You left the game");
+			this.sendMessage(instance.translator.get("player-left"));
 			if(this.players > 1){
-				this.sendMessage(player.getName() + " left the game");
-			} else {
+				this.sendMessage(instance.translator.get("room-player-left").replace("$player", player.getName()));
+			} else if(this.isStarted()){
 				this.cancelTasks();
 				this.sendMessage("Sorry not enough people left, stopping the game...");
 				this.stop();
@@ -143,22 +145,22 @@ public class BuildZone implements Listener {
 					this.players += 1;
 					if(this.players > 0){
 						for(Player p : score.keySet()){
-							ChatUtil.send(p, player.getName() + " join the game" + "   (" + this.players + "/" + this.MAXPLAYERS + " players)");
+							ChatUtil.send(p, instance.translator.get("join").replace("$player", player.getName()).replace("$currentplayers", String.valueOf(this.players)).replace("$maxplayers", String.valueOf(this.MAXPLAYERS)));
 						}
 					}
 					
 					if(this.players == this.MAXPLAYERS){
-						this.sendMessage("Room is full, starting game in 5sec");
+						this.sendMessage(instance.translator.get("room-starting"));
 						TaskStart start = new TaskStart(this);
 						start.runTaskLater(instance, 100);
 						this.tasks.add(start);
 					}
 				} else {
-					ChatUtil.send(player, "Room full!");
+					ChatUtil.send(player, instance.translator.get("room-full"));
 				}
 			}
 		} else {
-			ChatUtil.send(player, "Room already ingame!");
+			ChatUtil.send(player, instance.translator.get("room-started"));
 		}
 			
 	}
@@ -231,6 +233,9 @@ public class BuildZone implements Listener {
 	}
 	
 	public void stop(){
+		
+		this.started = false;
+		
 		List<Player> toKick = new ArrayList<Player>();
 		for(Player p : this.score.keySet()){
 			toKick.add(p);
@@ -386,6 +391,11 @@ public class BuildZone implements Listener {
 	public void wordFoundBy(Player player) {
 		if(this.acceptWords && !this.hasFound.contains(player)){
 			this.hasFound.add(player);
+			
+			for(Player p : this.score.keySet()){
+				p.getWorld().playSound(p.getLocation(), Sound.ANVIL_LAND, 1, 1);
+			}
+			
 			if(!wordHasBeenFound){
 				this.sendMessage(instance.translator.get("player-find-word-3points").replace("$player", player.getName()));
 				this.sendMessage(instance.translator.get("builder-get-points").replace("$player", builder.getName()));

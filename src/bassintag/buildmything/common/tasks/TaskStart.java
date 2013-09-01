@@ -1,6 +1,8 @@
-package bassintag.buildmything.common.buildZone;
+package bassintag.buildmything.common.tasks;
 
 import org.bukkit.scheduler.BukkitRunnable;
+
+import bassintag.buildmything.common.buildZone.BuildZone;
 
 public class TaskStart extends BukkitRunnable{
 	
