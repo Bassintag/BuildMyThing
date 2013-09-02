@@ -140,7 +140,13 @@ public class BuildMyThing extends JavaPlugin{
 										Location loc1 = LocationUtil.StringToLoc(player.getMetadata("bmtp1").get(0).asString());
 										Location loc2 = LocationUtil.StringToLoc(player.getMetadata("bmtp2").get(0).asString());
 										Location spawn = LocationUtil.StringToLoc(player.getMetadata("bmtspec").get(0).asString());
-										this.rooms.add(new BuildZone(new CuboidZone(loc1.getBlock(), loc2.getBlock()), spawn, args[1], this));
+										BuildZone b = new BuildZone(new CuboidZone(loc1.getBlock(), loc2.getBlock()), spawn, args[1], this);
+										if(args.length > 2){
+											if(isInteger(args[2])){
+												b.setMaxPlayers(Integer.parseInt(args[2]));
+											}
+										}
+										this.rooms.add(b);
 										ChatUtil.send(player, translator.get("room-created"));
 									}
 								} else {
@@ -154,6 +160,7 @@ public class BuildMyThing extends JavaPlugin{
 								if(this.getRoomByName(args[1]) != null){
 									this.getRoomByName(args[1]).remove(getConfig());
 									this.rooms.remove(this.getRoomByName(args[1]));
+									ChatUtil.send(player, translator.get("room-deleted"));
 								} else {
 									ChatUtil.send(player, translator.get("room-doesnt-exist"));
 								}
@@ -253,6 +260,15 @@ public class BuildMyThing extends JavaPlugin{
 		}
 		return false;
 	}
+
+	 public static boolean isInteger(String s) {
+	     try { 
+	         Integer.parseInt(s); 
+	     } catch(NumberFormatException e) { 
+	         return false; 
+	     }
+	     return true;
+	 }
 	
     public void spawnRandomFirework(Location loc) {               
 

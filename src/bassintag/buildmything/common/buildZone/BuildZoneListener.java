@@ -117,8 +117,8 @@ public class BuildZoneListener implements Listener{
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event){
 		if(event.getPlayer().hasPermission("bmt.admin")){
-			if(UpdateChecker.isOutdated(instance)){
-				if(instance.getConfig().getBoolean("update-checker")){
+			if(instance.getConfig().getBoolean("update-checker")){
+				if(UpdateChecker.isOutdated(instance)){
 					String version = UpdateChecker.getLastVersion("http://dev.bukkit.org/bukkit-plugins/build-my-thing/files.rss");
 					ChatUtil.send(event.getPlayer(),ChatColor.RED +  "New version available: " + ChatColor.RESET + version + ChatColor.RED + "\n Get it here:");
 					event.getPlayer().sendMessage("  http://dev.bukkit.org/bukkit-plugins/build-my-thing/files");

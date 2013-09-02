@@ -11,6 +11,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -48,7 +50,7 @@ public class BuildZone implements Listener {
 	private Player builder;
 	
 	private int players;
-	private final int MAXPLAYERS = 12;
+	private int maxplayers = 12;
 	private int buildPerPlayer = 2;
 	private String name;
 	
@@ -62,6 +64,8 @@ public class BuildZone implements Listener {
 	private List<BukkitRunnable> tasks = new ArrayList<BukkitRunnable>();
 	
 	private boolean acceptWords = true;
+	
+	private List<Block> signs = new ArrayList<Block>();
 	
 	ScoreboardManager manager = Bukkit.getScoreboardManager();
 	Scoreboard board = manager.getNewScoreboard();
@@ -86,7 +90,7 @@ public class BuildZone implements Listener {
 	public void leave(Player player){
 		if(this.score.containsKey(player)){
 			if(this.started == false){
-				if(this.players == this.MAXPLAYERS){
+				if(this.players == this.maxplayers){
 					this.sendMessage("Someone left the game, game won't start until everyone is ready");
 					this.cancelTasks();
 				}
@@ -94,6 +98,9 @@ public class BuildZone implements Listener {
 			this.score.remove(player);
 			this.ready.remove(player);
 			this.hasBeenBuilder.remove(player);
+			if(this.hasFound(player)){
+				this.playerFound--;
+			}
 			this.hasFound.remove(player);
 			if(this.inventories.get(player) != null){
 				player.getInventory().setContents(inventories.get(player));
@@ -104,11 +111,12 @@ public class BuildZone implements Listener {
 			this.gamemode.remove(player);
 			this.board.resetScores(player);
 			player.setScoreboard(manager.getMainScoreboard());
-			this.players = this.players - 1;
+			this.players--;
 			player.teleport(LocationUtil.StringToLoc(player.getMetadata("oldLoc").get(0).asString()));
 			player.removeMetadata("oldLoc", instance);
 			player.removeMetadata("inbmt", instance);
-			this.sendMessage(instance.translator.get("player-left"));
+			ChatUtil.send(player, instance.translator.get("player-left"));
+			this.updateSigns();
 			if(this.players > 1){
 				this.sendMessage(instance.translator.get("room-player-left").replace("$player", player.getName()));
 			} else if(this.isStarted()){
@@ -122,7 +130,7 @@ public class BuildZone implements Listener {
 	public void join(Player player){
 		if(!isStarted()){
 			if(!this.score.containsKey(player)){
-				if(this.players < this.MAXPLAYERS){
+				if(this.players < this.maxplayers){
 					ItemStack[] inventory = player.getInventory().getContents();
 					ItemStack[] saveInventory = new ItemStack[inventory.length];
 					for(int i = 0; i < inventory.length; i++)
@@ -145,16 +153,18 @@ public class BuildZone implements Listener {
 					this.players += 1;
 					if(this.players > 0){
 						for(Player p : score.keySet()){
-							ChatUtil.send(p, instance.translator.get("join").replace("$player", player.getName()).replace("$currentplayers", String.valueOf(this.players)).replace("$maxplayers", String.valueOf(this.MAXPLAYERS)));
+							ChatUtil.send(p, instance.translator.get("join").replace("$player", player.getName()).replace("$currentplayers", String.valueOf(this.players)).replace("$maxplayers", String.valueOf(this.maxplayers)));
 						}
 					}
 					
-					if(this.players == this.MAXPLAYERS){
+					if(this.players == this.maxplayers){
 						this.sendMessage(instance.translator.get("room-starting"));
 						TaskStart start = new TaskStart(this);
 						start.runTaskLater(instance, 100);
 						this.tasks.add(start);
 					}
+					
+					this.updateSigns();
 				} else {
 					ChatUtil.send(player, instance.translator.get("room-full"));
 				}
@@ -182,6 +192,7 @@ public class BuildZone implements Listener {
 				this.hasBeenBuilder.put(p, 0);
 			}
 			this.startRound();
+			this.updateSigns();
 		}
 	}
 	
@@ -321,6 +332,22 @@ public class BuildZone implements Listener {
 		file.set("rooms" + this.getName() + ".pos1", LocationUtil.LocationToString(this.buildzone.getCorner1().getLocation()));
 		file.set("rooms" + this.getName() + ".pos2", LocationUtil.LocationToString(this.buildzone.getCorner2().getLocation()));
 		file.set("rooms" + this.getName() + ".spawn", LocationUtil.LocationToString(this.spectateTP));
+		file.set("rooms" + this.getName() + ".maxplayers", this.maxplayers);
+		List<String> signData = new ArrayList<String>();
+		for(Block s : this.signs){
+			if (s.getType() == Material.WALL_SIGN){
+				String loc = LocationUtil.LocationToString(s.getLocation());
+				String display;
+				if(s.hasMetadata("display")){
+					display = ";" + s.getMetadata("display").get(0).asString();
+				} else {
+					display = ";none";
+				}
+				String result = loc + display;
+				signData.add(result);
+			}
+		}
+		file.set("rooms" + this.getName() + ".signs", signData);
 	}
 	
 	public void remove(FileConfiguration file){
@@ -333,8 +360,28 @@ public class BuildZone implements Listener {
 		Location corner1 = LocationUtil.StringToLoc(file.getString("rooms" + name + ".pos1"));
 		Location corner2 = LocationUtil.StringToLoc(file.getString("rooms" + name + ".pos2"));
 		Location spawn = LocationUtil.StringToLoc(file.getString("rooms" + name + ".spawn"));
-		
-		return new BuildZone(new CuboidZone(corner1.getBlock(), corner2.getBlock()), spawn, name, instance);
+		BuildZone b = new BuildZone(new CuboidZone(corner1.getBlock(), corner2.getBlock()), spawn, name, instance);
+		b.setMaxPlayers(file.getInt("rooms" + name + ".maxplayers"));
+		if(file.getList("rooms" + name + ".signs") != null){
+			@SuppressWarnings("unchecked")
+			List<String> signLoc = (List<String>) file.getList("rooms" + name + ".signs");
+			for(String s : signLoc){
+				String loc = s.split(";")[0];
+				String display = s.split(";")[1];
+				Location l = LocationUtil.StringToLoc(loc);
+				Block block = l.getBlock();
+				if(block.getState() instanceof Sign){
+					if (block.getType() == Material.WALL_SIGN){
+						b.registerSign(block, display);
+					}
+				}
+			}
+		}
+		return b;
+	}
+	
+	public void setMaxPlayers(int i){
+		this.maxplayers = i;
 	}
 	
 	private boolean isEveryoneReady(){
@@ -411,7 +458,7 @@ public class BuildZone implements Listener {
 			this.playerFound++;
 		}
 		
-		if(this.playerFound >= this.players - 1){
+		if(this.playerFound == this.players - 1){
 			this.sendMessage(instance.translator.get("everyone-found"));
 			this.sendMessage(instance.translator.get("next-round"));
 			this.cancelTasks();
@@ -427,10 +474,92 @@ public class BuildZone implements Listener {
 	}
 
 	public int getMaxPlayers() {
-		return this.MAXPLAYERS;
+		return this.maxplayers;
 	}
 
 	public boolean hasFound(Player player) {
 		return this.hasFound.contains(player);
+	}
+	
+	public void updateSigns(){
+		for(Block b : this.signs){
+			if(b.getState() instanceof Sign){
+				Sign s = (Sign)b.getState();
+				s.setLine(0, ChatColor.WHITE + "[" + ChatColor.GREEN + "Join" + ChatColor.WHITE + "]");
+				s.setLine(1, ChatColor.YELLOW + this.getName());
+				s.setLine(2, ChatColor.GRAY + String.valueOf(players) + ChatColor.WHITE + "/" + ChatColor.GRAY + maxplayers);
+				s.setLine(3, this.started ? ChatColor.RED + "STARTED" : ChatColor.GREEN + "OPEN");
+				s.update();
+				
+				if(b.hasMetadata("display")){
+					String display = b.getMetadata("display").get(0).asString();
+					org.bukkit.material.Sign sign = (org.bukkit.material.Sign) b.getState().getData();
+					Block attachedBlock = b.getRelative(sign.getAttachedFace());
+					if(display.equals("wool")){
+						for(int i = 0; i < this.maxplayers; i++){
+							if(this.isStarted()){
+								Location loc = attachedBlock.getLocation().clone().add(0, i + 1, 0);
+								loc.getBlock().setType(Material.WOOL);
+								loc.getBlock().setData((byte)14);
+							} else {
+								Location loc = attachedBlock.getLocation().clone().add(0, i + 1, 0);
+								loc.getBlock().setType(Material.WOOL);
+								loc.getBlock().setData(i < this.players ? (byte)1 : (byte)5);
+							}
+						}
+					} else if(display.equals("lamp")){
+							if(this.isStarted()){
+								Location loc = attachedBlock.getLocation().clone().add(0, + 1, 0);
+								attachedBlock.setType(Material.REDSTONE_BLOCK);
+								loc.getBlock().setType(Material.REDSTONE_LAMP_ON);
+							} else {
+								Location loc = attachedBlock.getLocation().clone().add(0, + 1, 0);
+								attachedBlock.setType(Material.EMERALD_BLOCK);
+								loc.getBlock().setType(Material.REDSTONE_LAMP_OFF);
+							}
+					} else if(display.equals("kany")){
+						//OMG A SECRET !
+						if(this.isStarted()){
+							Location loc = attachedBlock.getLocation().clone().add(0, + 1, 0);
+							attachedBlock.setType(Material.GRASS);
+							loc.getBlock().setType(Material.RED_ROSE);
+						} else {
+							Location loc = attachedBlock.getLocation().clone().add(0, + 1, 0);
+							attachedBlock.setType(Material.GRASS);
+							loc.getBlock().setType(Material.YELLOW_FLOWER);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	public void registerSign(Block block){
+		this.registerSign(block, "none");
+	}
+
+	public void registerSign(Block block, String display) {
+		if(block.getState() instanceof Sign) {
+			this.signs.add(block);
+			block.setMetadata("bmtjoinsign", new FixedMetadataValue(instance, this.getName()));
+			if(display.equalsIgnoreCase("wool")){
+				block.setMetadata("display", new FixedMetadataValue(instance, "wool"));
+			} else if(display.equalsIgnoreCase("lamp")){
+				block.setMetadata("display", new FixedMetadataValue(instance, "lamp"));
+			} else if(display.equalsIgnoreCase("kany")){
+				//OMG A SECRET !
+				block.setMetadata("display", new FixedMetadataValue(instance, "kany"));
+			}
+			this.updateSigns();
+		}
+	}
+	
+	public void removeSign(Block block){
+		if(block.getState() instanceof Sign) {
+			this.signs.remove(block);
+			if(block.hasMetadata("bmtjoinsign")){
+				block.removeMetadata("bmtjoinsign", instance);
+			}
+		}
 	}
 }

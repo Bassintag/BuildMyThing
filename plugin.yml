@@ -1,6 +1,6 @@
 name: BuildMyThing
 main: bassintag.buildmything.common.BuildMyThing
-version: 1.4
+version: 1.5
 description: >
              Draw something in Minecraft.
 commands:

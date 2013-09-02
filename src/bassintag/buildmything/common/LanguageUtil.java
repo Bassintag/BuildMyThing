@@ -54,7 +54,7 @@ public class LanguageUtil {
 			config.set("language.not-ready", "$player is no longer ready!");
 			config.set("language.everyone-ready", "Everyone is ready, starting the game!");
 			config.set("language.game-over", ChatColor.BOLD + "GAME OVER");
-			config.set("language.winner", ChatColor.GREEN + "WINNER: " + ChatColor.BOLD + "$player" + ChatColor.RESET + " [score]");
+			config.set("language.winner", ChatColor.GREEN + "WINNER: " + ChatColor.BOLD + "$player" + ChatColor.RESET + " [$score]");
 			config.set("language.60sec", "60 secondes left!");
 			config.set("language.30sec", "30 secondes left!");
 			config.set("language.10sec", "10 secondes left!");
@@ -69,9 +69,11 @@ public class LanguageUtil {
 			config.set("language.room-full", "Room full!");
 			config.set("language.player-left", "You left the game");
 			config.set("language.room-player-left", "$player left the game");
+			config.set("language.room-deleted", "Room removed!");
+			config.set("language.already-reported", "You already reported this player!");
 		} else if(language.toLowerCase().startsWith("fr")){
 			config.set("language.p1-set", "Le point 1 se trouve maintenant à votre position");
-			config.set("language.p1-set", "Le point 2 se trouve maintenant à votre position");
+			config.set("language.p2-set", "Le point 2 se trouve maintenant à votre position");
 			config.set("language.spawn-set", "Le point de spawn se trouve maintenant à votre position");
 			config.set("language.room-created", "La salle a été crée!");
 			config.set("language.room-cannot-create", "Assurez vous d'avoir choisi les point 1 et 2 ainsi qu'un point de spawn");
@@ -114,6 +116,8 @@ public class LanguageUtil {
 			config.set("language.room-full", "La salle est pleine!");
 			config.set("language.player-left", "Vous avez quitté la partie");
 			config.set("language.room-player-left", "$player a quitté la partie");
+			config.set("language.room-deleted", "Salle supprimée!");
+			config.set("language.already-reported", "Vous avez déjà signalé ce joueur!");
 		}
 	}
 
