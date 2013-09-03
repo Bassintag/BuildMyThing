@@ -216,6 +216,7 @@ public class BuildZone implements Listener {
 		this.word = this.getNewWord();
 		this.buildzone.clear();
 		this.getNextBuilder();
+		this.resetAllPlayersHunger();
 		
 		TaskAlert alert1 = new TaskAlert(instance.translator.get("60sec"), this.getPlayers());
 		TaskAlert alert2 = new TaskAlert(instance.translator.get("30sec"), this.getPlayers());
@@ -471,6 +472,14 @@ public class BuildZone implements Listener {
 	public void setNotAcceptWords() {
 		this.acceptWords = false;
 		
+	}
+	
+	// Used for resetting players' hunger to max at start of round
+	private void resetAllPlayersHunger() {
+		List<Player> currentPlayers = getPlayers();
+		for (Player p : currentPlayers) {
+			p.setFoodLevel(20);
+		}
 	}
 
 	public int getMaxPlayers() {
