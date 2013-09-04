@@ -25,6 +25,7 @@ public class LanguageUtil {
 	public void setLanguage(String language){
 		FileConfiguration config = this.instance.getConfig();
 		if(language.toLowerCase().startsWith("en")){
+			config.set("language.config-reload", "Config Reloaded");
 			config.set("language.p1-set", "Point 1 set to your actual feet position");
 			config.set("language.p2-set", "Point 2 set to your actual feet position");
 			config.set("language.spawn-set", "Room spawn location set to your actual feet position");
@@ -72,6 +73,7 @@ public class LanguageUtil {
 			config.set("language.room-deleted", "Room removed!");
 			config.set("language.already-reported", "You already reported this player!");
 		} else if(language.toLowerCase().startsWith("fr")){
+			config.set("language.config-reload", "Configuration rechargé");
 			config.set("language.p1-set", "Le point 1 se trouve maintenant à votre position");
 			config.set("language.p2-set", "Le point 2 se trouve maintenant à votre position");
 			config.set("language.spawn-set", "Le point de spawn se trouve maintenant à votre position");

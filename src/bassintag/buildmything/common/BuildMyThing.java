@@ -97,6 +97,11 @@ public class BuildMyThing extends JavaPlugin{
 		this.getAllWords(true);
 	}
 	
+	// Reload config from file (just words)
+	public void reload() {
+		getAllWords(true);
+	}
+	
 	@SuppressWarnings("unchecked")
 	public List<String> getAllWords(boolean shouldReload) {
 		// If words not setup yet or we should force reload
@@ -130,7 +135,11 @@ public class BuildMyThing extends JavaPlugin{
 			if(sender instanceof Player){
 				Player player  = (Player) sender;
 				if(args.length > 0){
-						if(args[0].equals("p1") && player.hasPermission("bmt.admin")){
+						if (args[0].equals("reload") && player.hasPermission("bmt.admin")) {
+							this.reload();
+							ChatUtil.send(player, translator.get("config-reload"));
+							return true;
+						} else if(args[0].equals("p1") && player.hasPermission("bmt.admin")){
 							ChatUtil.send(player, translator.get("p1-set"));
 							player.setMetadata("bmtp1", new FixedMetadataValue(this, LocationUtil.LocationToString(player.getLocation())));
 							return true;
