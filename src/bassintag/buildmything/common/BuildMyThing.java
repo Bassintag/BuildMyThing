@@ -30,6 +30,8 @@ import bassintag.buildmything.common.signs.SignListener;
 
 public class BuildMyThing extends JavaPlugin{
 	
+	private static List<String> DEFAULT_WORDS = new ArrayList<String>(Arrays.asList(new String[] {"house", "creeper", "pickaxe", "boat", "dog", "apple", "bow", "bone", "minecart", "zombie", "pig", "chicken", "skeleton", "tree", "cloud", "sun", "moon", "cave", "slime", "flower", "mountain", "volcano", "potato", "mushroom", "sword", "armor", "diamond", "cat", "book", "sheep", "squid", "enderman", "snowman", "bread", "wheat"}));
+	
 	private List<BuildZone> rooms = new ArrayList<BuildZone>();
 	public Logger logger = Logger.getLogger("Minecraft");
 	public BuildMyThing plugin = this;
@@ -61,9 +63,8 @@ public class BuildMyThing extends JavaPlugin{
 		
 		this.getLogger().info("Current version: " + pdfFile.getVersion());
 		
-		List<String> defaultWords = new ArrayList<String>(Arrays.asList(new String[] {"house", "creeper", "pickaxe", "boat", "dog", "apple", "bow", "bone", "minecart", "zombie", "pig", "chicken", "skeleton", "tree", "cloud", "sun", "moon", "cave", "slime", "flower", "mountain", "volcano", "potato", "mushroom", "sword", "armor", "diamond", "cat", "book", "sheep", "squid", "enderman", "snowman", "bread", "wheat"}));
-	    this.getConfig().options().copyDefaults(true);
-	    this.getConfig().addDefault("words", defaultWords);
+		this.getConfig().options().copyDefaults(true);
+	    this.getConfig().addDefault("words", DEFAULT_WORDS);
 	    this.getConfig().addDefault("allow-creative", false);
 	    this.getConfig().addDefault("start-when-full", true);
 	    this.getConfig().addDefault("language-current", "en");
@@ -92,25 +93,35 @@ public class BuildMyThing extends JavaPlugin{
 			}
 		}
 		
-		if(getConfig().getList("words") != null){
-			if(getConfig().getList("words").size() > 0){
-				if(getConfig().getList("words").get(0) instanceof String){
-					@SuppressWarnings("unchecked")
-					List<String> words = (List<String>) getConfig().getList("words");
-					for(String s : words){
-						if(s != null){
-							this.words.add(s);
-						}
-					}
-				}
-			}
+		// Load and cache all words from file on start
+		this.getAllWords(true);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<String> getAllWords(boolean shouldReload) {
+		// If words not setup yet or we should force reload
+		if (words.isEmpty() || shouldReload) {
+			words = (List<String>) getConfig().getList("words");
 		}
+		
+		if (words == null) {
+			return DEFAULT_WORDS;
+		}
+		if (words.isEmpty()) {
+			return DEFAULT_WORDS;
+		}
+		
+		return words;
+	}
+	// Default is not to reload
+	public List<String> getAllWords() {
+		return getAllWords(false);
 	}
 	
 	public String getRandomWord(){
-		int i = this.words.size();
+		int size = getAllWords().size();
 		Random r = new Random();
-		return this.words.get(r.nextInt(i));
+		return getAllWords().get(r.nextInt(size));
 	}
 
 	@Override
