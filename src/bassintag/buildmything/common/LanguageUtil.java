@@ -55,9 +55,9 @@ public class LanguageUtil {
 			config.set("language.everyone-ready", "Everyone is ready, starting the game!");
 			config.set("language.game-over", ChatColor.BOLD + "GAME OVER");
 			config.set("language.winner", ChatColor.GREEN + "WINNER: " + ChatColor.BOLD + "$player" + ChatColor.RESET + " [$score]");
-			config.set("language.60sec", "60 secondes left!");
-			config.set("language.30sec", "30 secondes left!");
-			config.set("language.10sec", "10 secondes left!");
+			config.set("language.60sec", "60 seconds left!");
+			config.set("language.30sec", "30 seconds left!");
+			config.set("language.10sec", "10 seconds left!");
 			config.set("language.time-out", ChatColor.RED + "Time out! Starting next round in 5sec!");
 			config.set("language.word-reveal", ChatColor.GREEN + "The word was: " + ChatColor.BOLD + "$word");
 			config.set("language.score", ChatColor.GREEN + "Score:");
@@ -71,6 +71,11 @@ public class LanguageUtil {
 			config.set("language.room-player-left", "$player left the game");
 			config.set("language.room-deleted", "Room removed!");
 			config.set("language.already-reported", "You already reported this player!");
+			config.set("language.room-updated", "Room updated!");
+			config.set("language.builder-abondon", "The builder abondon!");
+			config.set("language.player-penalty", "$player recieved a penalty! " + ChatColor.RED + "[-$penalty]");
+			config.set("language.reload", "Reloading config, all started games will stop!");
+			config.set("language.broadcast-win", "$player just won a Build My Thing game in $room!");
 		} else if(language.toLowerCase().startsWith("fr")){
 			config.set("language.p1-set", "Le point 1 se trouve maintenant à votre position");
 			config.set("language.p2-set", "Le point 2 se trouve maintenant à votre position");
@@ -118,6 +123,10 @@ public class LanguageUtil {
 			config.set("language.room-player-left", "$player a quitté la partie");
 			config.set("language.room-deleted", "Salle supprimée!");
 			config.set("language.already-reported", "Vous avez déjà signalé ce joueur!");
+			config.set("language.room-updated", "Salle mise à jour!");
+			config.set("language.builder-abondon", "Le constructeur abandonne!");
+			config.set("language.reload", "Rechargement de la configuration, toutes les salles vont s'arrêter!");
+			config.set("language.broadcast-win", "$player vient de gagner une partie de Build My Thing dans $room!");
 		}
 	}
 

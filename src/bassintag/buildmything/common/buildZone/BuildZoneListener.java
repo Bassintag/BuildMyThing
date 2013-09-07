@@ -9,6 +9,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -50,7 +51,7 @@ public class BuildZoneListener implements Listener{
 				if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getBuilder().getName() == event.getPlayer().getName()){
 					if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getBuildZone().contains(event.getBlock())){
 						event.getPlayer().getInventory().addItem(new ItemStack(event.getBlockPlaced().getType(), 1, event.getBlockPlaced().getData()));
-						return;
+						event.getBlockPlaced().setType(event.getBlockPlaced().getType());
 					}
 				}
 			}
@@ -115,6 +116,13 @@ public class BuildZoneListener implements Listener{
 	}
 	
 	@EventHandler
+	public void onPlayerHungerChange(FoodLevelChangeEvent event){
+		if(event.getEntity().hasMetadata("inbmt")){
+			event.setCancelled(true);
+		}
+	}
+	
+	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event){
 		if(event.getPlayer().hasPermission("bmt.admin")){
 			if(instance.getConfig().getBoolean("update-checker")){
@@ -132,9 +140,7 @@ public class BuildZoneListener implements Listener{
 	public void onPlayerChat(AsyncPlayerChatEvent event){
 		if(event.getPlayer().hasMetadata("inbmt")){
 			if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()) != null){
-				System.out.println("test1");
 				if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).isStarted()){
-					System.out.println("test2");
 					if(instance.getRoomByName(event.getPlayer().getMetadata("inbmt").get(0).asString()).getBuilder().getName() == event.getPlayer().getName()){
 						ChatUtil.send(event.getPlayer(), instance.translator.get("no-chat-while-builder"));
 						event.setCancelled(true);

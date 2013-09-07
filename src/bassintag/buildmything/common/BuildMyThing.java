@@ -35,6 +35,8 @@ public class BuildMyThing extends JavaPlugin{
 	public BuildMyThing plugin = this;
 	public LanguageUtil translator;
 	
+	public static final List<String> DEFAULT_WORDS = new ArrayList<String>(Arrays.asList(new String[] {"house", "creeper", "pickaxe", "boat", "dog", "apple", "bow", "bone", "minecart", "zombie", "pig", "chicken", "skeleton", "tree", "cloud", "sun", "moon", "cave", "slime", "flower", "mountain", "volcano", "potato", "mushroom", "sword", "armor", "diamond", "cat", "book", "sheep", "squid", "enderman", "snowman", "bread", "wheat"}));
+	
 	private List<String> words = new ArrayList<String>();
 	
 	@Override
@@ -61,50 +63,13 @@ public class BuildMyThing extends JavaPlugin{
 		
 		this.getLogger().info("Current version: " + pdfFile.getVersion());
 		
-		List<String> defaultWords = new ArrayList<String>(Arrays.asList(new String[] {"house", "creeper", "pickaxe", "boat", "dog", "apple", "bow", "bone", "minecart", "zombie", "pig", "chicken", "skeleton", "tree", "cloud", "sun", "moon", "cave", "slime", "flower", "mountain", "volcano", "potato", "mushroom", "sword", "armor", "diamond", "cat", "book", "sheep", "squid", "enderman", "snowman", "bread", "wheat"}));
-	    this.getConfig().options().copyDefaults(true);
-	    this.getConfig().addDefault("words", defaultWords);
-	    this.getConfig().addDefault("allow-creative", false);
-	    this.getConfig().addDefault("start-when-full", true);
-	    this.getConfig().addDefault("language-current", "en");
-	    this.getConfig().addDefault("update-checker", true);
-	    
-		translator = new LanguageUtil(this);
-		
-		translator.setLanguage(this.getConfig().getString("language-current"));
+		this.loadConfig();
 		
 		BuildZoneListener bListener = new BuildZoneListener(this);
 		SignListener sListener = new SignListener(this);
 		PluginManager pm = getServer().getPluginManager();
 		pm.registerEvents(bListener, this);
 		pm.registerEvents(sListener, this);
-		
-		if(getConfig().getList("rooms") != null){
-			if(getConfig().getList("rooms").size() > 0){
-				if(getConfig().getList("rooms").get(0) instanceof String){
-					@SuppressWarnings("unchecked")
-					List<String> rooms = (List<String>) getConfig().getList("rooms");
-					
-					for(String s : rooms){
-						this.rooms.add(BuildZone.load(getConfig(), s, this));
-					}
-				}
-			}
-		}
-		
-		if(getConfig().getList("words") != null){
-			if(getConfig().getList("words").size() > 0){
-				if(getConfig().getList("words").get(0) instanceof String){
-					@SuppressWarnings("unchecked")
-					List<String> words = (List<String>) getConfig().getList("words");
-					for(String s : words){
-						if(s != null){
-							this.words.add(s);
-						}
-					}
-				}
-			}
-		}
 	}
 	
 	public String getRandomWord(){
@@ -150,7 +115,7 @@ public class BuildMyThing extends JavaPlugin{
 										ChatUtil.send(player, translator.get("room-created"));
 									}
 								} else {
-									ChatUtil.send(player, translator.get("room-precize"));
+									ChatUtil.send(player, translator.get("room-cannot-create"));
 								}
 							} else {
 								ChatUtil.send(player, translator.get("room-precize"));
@@ -167,6 +132,28 @@ public class BuildMyThing extends JavaPlugin{
 							} else {
 								ChatUtil.send(player, translator.get("room-precize"));
 							}
+						} else if(args[0].equals("setlimit") && player.hasPermission("bmt.admin")){
+							if(args.length > 1){
+								if(this.getRoomByName(args[1]) != null){
+									if(args.length > 2){
+										this.getRoomByName(args[1]).stop();
+										this.getRoomByName(args[1]).setMaxPlayers(Integer.valueOf(args[2]));
+										ChatUtil.send(player, translator.get("room-updated"));
+									}
+								} else {
+									ChatUtil.send(player, translator.get("room-doesnt-exist"));
+								}
+							} else {
+								ChatUtil.send(player, translator.get("room-precize"));
+							}
+						} else if(args[0].equals("reload") && player.hasPermission("bmt.admin")){
+							ChatUtil.broadcast(translator.get("reload"));
+							this.stopAllRooms();
+							this.reloadConfig();
+							this.loadConfig();
+							
+						} else if(args[0].equals("version") && player.hasPermission("bmt.default")){
+							ChatUtil.send(player, "Version: " + this.getDescription().getVersion());
 						} else if(args[0].equals("join") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
 								ChatUtil.send(player, "You are already in a game room");
@@ -199,6 +186,12 @@ public class BuildMyThing extends JavaPlugin{
 								player.sendMessage(ChatColor.YELLOW + "* " + ChatColor.AQUA + b.getName() + ChatColor.RESET +  " | " + b.getPlayers().size() + ChatColor.YELLOW + "/" + ChatColor.RESET + b.getMaxPlayers() + " | (" + (b.isStarted() ? ChatColor.RED + "STARTED" : ChatColor.GREEN + "OPEN") + ChatColor.RESET + ")");
 							}
 						} else if(args[0].equals("invite") && player.hasPermission("bmt.default")){
+							if(player.hasMetadata("inbmt")){
+								this.getRoomByName(player.getMetadata("inbmt").get(0).asString()).abondon(player);
+							} else {
+								ChatUtil.send(player, translator.get("player-not-ingame"));
+							}
+						} else if(args[0].equals("abondon") && player.hasPermission("bmt.default")){
 							if(player.hasMetadata("inbmt")){
 								ChatUtil.broadcast(translator.get("invite").replace("$player", player.getName()));
 							} else {
@@ -238,6 +231,8 @@ public class BuildMyThing extends JavaPlugin{
 								player.sendMessage(ChatColor.GOLD + "/bmt spawn " + ChatColor.GRAY + "Set the spawn point to your current position");
 								player.sendMessage(ChatColor.GOLD + "/bmt create [room name] " + ChatColor.GRAY + "Create a new room with the supplied name");
 								player.sendMessage(ChatColor.GOLD + "/bmt remove [room name] " + ChatColor.GRAY + "Remove the room with the supplied name");
+								player.sendMessage(ChatColor.GOLD + "/bmt setlimit [room name] " + ChatColor.GRAY + "Change player limit of the room wih the supplied name");
+								player.sendMessage(ChatColor.GOLD + "/bmt reload" + ChatColor.GRAY + "Reload the plugin");
 							}
 							
 							if(player.hasPermission("bmt.default")){
@@ -247,6 +242,8 @@ public class BuildMyThing extends JavaPlugin{
 								player.sendMessage(ChatColor.GOLD + "/bmt invite " + ChatColor.GRAY + "Broadcast a message to invite other players to join you");
 								player.sendMessage(ChatColor.GOLD + "/bmt playwith [username] " + ChatColor.GRAY + "Play with another player");
 								player.sendMessage(ChatColor.GOLD + "/bmt list " + ChatColor.GRAY + "Display a list of all rooms");
+								player.sendMessage(ChatColor.GOLD + "/bmt abondon " + ChatColor.GRAY + "Give up");
+								player.sendMessage(ChatColor.GOLD + "/bmt version " + ChatColor.GRAY + "Display the current version");
 							}
 						}else {
 							ChatUtil.send(player, translator.get("wrong-command"));
@@ -261,7 +258,63 @@ public class BuildMyThing extends JavaPlugin{
 		return false;
 	}
 
-	 public static boolean isInteger(String s) {
+	 private void stopAllRooms() {
+		for(BuildZone b : this.rooms){
+			b.stop();
+		}
+		
+	}
+
+	private void loadConfig() {
+		    this.getConfig().options().copyDefaults(true);
+		    this.getConfig().options().header("Welcome to the Build My Thing configuration file !");
+		    if(!this.getConfig().contains("words")){
+		    	//I didn't used .addDefault to force the config to generate.
+		    	this.getConfig().set("words", DEFAULT_WORDS);
+		    }
+		    this.getConfig().addDefault("allow-creative", false);
+		    this.getConfig().addDefault("start-when-full", true);
+		    this.getConfig().addDefault("language-current", "en");
+		    this.getConfig().addDefault("update-checker", true);
+		    this.getConfig().addDefault("penalty-on-abandon", false);
+		    this.getConfig().addDefault("broadcast-on-game-over", true);
+			translator = new LanguageUtil(this);
+			this.saveConfig();
+			
+			translator.setLanguage(this.getConfig().getString("language-current"));
+			
+			this.rooms.clear();
+			this.words.clear();
+			
+			if(getConfig().getList("rooms") != null){
+				if(getConfig().getList("rooms").size() > 0){
+					if(getConfig().getList("rooms").get(0) instanceof String){
+						@SuppressWarnings("unchecked")
+						List<String> rooms = (List<String>) getConfig().getList("rooms");
+						
+						for(String s : rooms){
+							this.rooms.add(BuildZone.load(getConfig(), s, this));
+						}
+					}
+				}
+			}
+			
+			if(getConfig().getList("words") != null){
+				if(getConfig().getList("words").size() > 0){
+					if(getConfig().getList("words").get(0) instanceof String){
+						@SuppressWarnings("unchecked")
+						List<String> words = (List<String>) getConfig().getList("words");
+						for(String s : words){
+							if(s != null){
+								this.words.add(s);
+							}
+						}
+					}
+				}
+			}
+	}
+
+	public static boolean isInteger(String s) {
 	     try { 
 	         Integer.parseInt(s); 
 	     } catch(NumberFormatException e) { 

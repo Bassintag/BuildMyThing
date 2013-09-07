@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -45,6 +46,7 @@ public class BuildZone implements Listener {
 	private Map<Player, Integer> hasBeenBuilder = new HashMap<Player, Integer>();
 	private Map<Player, ItemStack[]> inventories = new HashMap<Player, ItemStack[]>();
 	private Map<Player, GameMode> gamemode = new HashMap<Player, GameMode>();
+	private Map<Player, Integer> foodLevel = new HashMap<Player, Integer>();
 	
 	private List<Player> hasFound = new ArrayList<Player>();
 	private Player builder;
@@ -70,6 +72,8 @@ public class BuildZone implements Listener {
 	ScoreboardManager manager = Bukkit.getScoreboardManager();
 	Scoreboard board = manager.getNewScoreboard();
 	Objective objective;
+
+	private boolean usesCustomWords;
 	
 	public BuildZone(CuboidZone build, Location loc, String name, BuildMyThing instance){
 		this.buildzone = build;
@@ -95,6 +99,8 @@ public class BuildZone implements Listener {
 					this.cancelTasks();
 				}
 			}
+			player.setFoodLevel(this.foodLevel.get(player));
+			this.foodLevel.remove(player);
 			this.score.remove(player);
 			this.ready.remove(player);
 			this.hasBeenBuilder.remove(player);
@@ -130,6 +136,8 @@ public class BuildZone implements Listener {
 	public void join(Player player){
 		if(!isStarted()){
 			if(!this.score.containsKey(player)){
+				player.setMetadata("oldLoc", new FixedMetadataValue(instance, LocationUtil.LocationToString(player.getLocation())));
+				player.teleport(this.spectateTP);
 				if(this.players < this.maxplayers){
 					ItemStack[] inventory = player.getInventory().getContents();
 					ItemStack[] saveInventory = new ItemStack[inventory.length];
@@ -141,11 +149,11 @@ public class BuildZone implements Listener {
 					    }
 					}
 					this.inventories.put(player, saveInventory);
+					this.foodLevel.put(player, player.getFoodLevel());
+					player.setFoodLevel(20);
 					this.gamemode.put(player, player.getGameMode());
 					player.getInventory().clear();
 					player.setGameMode(GameMode.SURVIVAL);
-					player.setMetadata("oldLoc", new FixedMetadataValue(instance, LocationUtil.LocationToString(player.getLocation())));
-					player.teleport(this.spectateTP);
 					player.setMetadata("inbmt", new FixedMetadataValue(instance, this.getName()));
 					player.setScoreboard(board);
 					this.score.put(player, 0);
@@ -176,7 +184,23 @@ public class BuildZone implements Listener {
 	}
 	
 	private String getNewWord(){
-		return instance.getRandomWord();
+		if(this.usesCustomWords){
+			return this.getRandomWordFromConfig();
+		} else {
+			return instance.getRandomWord();
+		}
+	}
+	
+	private String getRandomWordFromConfig(){
+		@SuppressWarnings("unchecked")
+		List<String> words = (List<String>)(this.instance.getConfig().getList("rooms" + this.name + ".custom-word-list"));
+		if(words.size() > 0){
+			int i = words.size();
+			Random r = new Random();
+			return words.get(r.nextInt(i));
+		} else {
+			return "null";
+		}
 	}
 	
 	public void start(){
@@ -232,6 +256,15 @@ public class BuildZone implements Listener {
 		this.tasks.add(alert2);
 		this.tasks.add(alert3);
 		this.tasks.add(endRoundMsg);
+	}
+	
+	public void removePlayerFromAlerts(Player p){
+		for(BukkitRunnable task : this.tasks){
+			if(task instanceof TaskAlert){
+				TaskAlert taskAlert = (TaskAlert)task;
+				taskAlert.removePlayer(p);
+			}
+		}
 	}
 	
 	public List<Player> getPlayers(){
@@ -293,6 +326,9 @@ public class BuildZone implements Listener {
 		if(this.score.containsKey(winner)){
 			int i = score.get(winner);
 			this.sendMessage(instance.translator.get("winner").replace("$score", String.valueOf(i)).replace("$player", winner.getName()));
+			if(instance.getConfig().getBoolean("broadcast-on-game-over")){
+				ChatUtil.broadcast(instance.translator.get("broadcast-name").replace("$player", winner.getName()).replace("$room", this.getName()));
+			}
 		}
 		this.stop();
 	}
@@ -306,7 +342,7 @@ public class BuildZone implements Listener {
 		} else {
 			p.setAllowFlight(true);
 			for(short i = 0; i < 16; i++){
-				p.getInventory().addItem(new ItemStack(Material.STAINED_CLAY, 2, i));
+				p.getInventory().addItem(new ItemStack(Material.STAINED_CLAY, 64, i));
 			}
 		}
 		this.sendMessage(instance.translator.get("builder").replace("$player", p.getName()));
@@ -333,6 +369,7 @@ public class BuildZone implements Listener {
 		file.set("rooms" + this.getName() + ".pos2", LocationUtil.LocationToString(this.buildzone.getCorner2().getLocation()));
 		file.set("rooms" + this.getName() + ".spawn", LocationUtil.LocationToString(this.spectateTP));
 		file.set("rooms" + this.getName() + ".maxplayers", this.maxplayers);
+		file.addDefault("rooms" + this.getName() + ".custom-words", false);
 		List<String> signData = new ArrayList<String>();
 		for(Block s : this.signs){
 			if (s.getType() == Material.WALL_SIGN){
@@ -362,6 +399,10 @@ public class BuildZone implements Listener {
 		Location spawn = LocationUtil.StringToLoc(file.getString("rooms" + name + ".spawn"));
 		BuildZone b = new BuildZone(new CuboidZone(corner1.getBlock(), corner2.getBlock()), spawn, name, instance);
 		b.setMaxPlayers(file.getInt("rooms" + name + ".maxplayers"));
+		if(file.getBoolean("rooms" + name + ".custom-words")){
+			file.addDefault("rooms" + name + ".custom-word-list", BuildMyThing.DEFAULT_WORDS);
+			b.setUsesCustomWords(true);
+		}
 		if(file.getList("rooms" + name + ".signs") != null){
 			@SuppressWarnings("unchecked")
 			List<String> signLoc = (List<String>) file.getList("rooms" + name + ".signs");
@@ -380,19 +421,26 @@ public class BuildZone implements Listener {
 		return b;
 	}
 	
+	public void setUsesCustomWords(Boolean b){
+		this.usesCustomWords = true;
+	}
+	
 	public void setMaxPlayers(int i){
 		this.maxplayers = i;
 	}
 	
 	private boolean isEveryoneReady(){
-		for(Player p : ready.keySet()){
-			if(ready.get(p) == true){
-				continue;
-			} else {
-				return false;
+		if(this.ready.size() > 0){
+			for(Player p : ready.keySet()){
+				if(ready.get(p) == true){
+					continue;
+				} else {
+					return false;
+				}
 			}
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	public void setReady(Player player) {
@@ -560,6 +608,27 @@ public class BuildZone implements Listener {
 			if(block.hasMetadata("bmtjoinsign")){
 				block.removeMetadata("bmtjoinsign", instance);
 			}
+		}
+	}
+
+	public void abondon(Player player) {
+		if(this.builder.equals(player)){
+			this.sendMessage(instance.translator.get("builder-abondon"));
+			if(this.instance.getConfig().getBoolean("penalty-on-abandon")){
+				this.sendMessage(instance.translator.get("player-penalty").replace("$player", player.getName()).replace("$score", "1"));
+				this.decreaseScore(player, 1);
+			}
+			this.sendMessage(instance.translator.get("next-round"));
+			this.cancelTasks();
+			TaskNextRound nextRound = new TaskNextRound(this);
+			nextRound.runTaskLater(instance, 100);
+		}
+	}
+
+	private void decreaseScore(Player player, int i) {
+		this.score.put(player, this.score.get(player) - i);
+		if(this.score.get(player) < 0){
+			this.score.put(player, 0);
 		}
 	}
 }
